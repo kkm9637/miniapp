@@ -1,17 +1,86 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>내 텔레그램 미니앱</title>
+    <title>회의록 작성</title>
+    <!-- 텔레그램 미니앱 필수 스크립트 -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 15px; background-color: var(--tg-theme-bg-color, #fff); color: var(--tg-theme-text-color, #000); }
+        .step { display: none; }
+        .active { display: block; }
+        input, select, textarea { width: 100%; margin-bottom: 15px; padding: 10px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background-color: var(--tg-theme-button-color, #3390ec); color: var(--tg-theme-button-text-color, #fff); border: none; border-radius: 5px; margin-bottom: 8px; font-weight: bold; }
+    </style>
 </head>
-
 <body>
-    <h1>🎉 Mini App 테스트</h1>
-    <p>텔레그램 미니앱이 정상적으로 실행되었습니다!</p>
 
-    <button onclick="alert('버튼을 눌렀습니다!')">
-        버튼 누르기
-    </button>
+<div id="step1" class="step active">
+    <b>[1단계] 기본 내용 기입</b><br><br>
+    <label>구역 선택</label>
+    <select id="zone">
+        <option value="1">1구역</option>
+        <option value="2">2구역</option>
+        <!-- 3~10구역 옵션 추가 가능 -->
+    </select>
+    
+    <label>일시</label>
+    <input type="date" id="date">
+    
+    <label>장소</label>
+    <input type="text" id="location" placeholder="장소를 기입해주세요">
+    
+    <label>참여자(이름)</label>
+    <input type="text" id="participants" placeholder="참여자 이름을 기입해주세요">
+    
+    <button onclick="nextStep(2)">다음으로</button>
+</div>
+
+<div id="step2" class="step">
+    <b>[2단계] 회의 내용 기입 (심방/예배)</b><br><br>
+    <label>심방(신앙관리) 특이사항</label>
+    <textarea id="visitNotes" rows="3" placeholder="구역 명단 리스트 및 특이사항 기입란 (추후 파이썬 서버와 DB 연동 필요)"></textarea>
+    
+    <label>예배 (개인/조직 피드백)</label>
+    <textarea id="worshipNotes" rows="3" placeholder="개인 특이사항 및 조직 자체 피드백"></textarea>
+    
+    <button onclick="nextStep(1)">이전으로</button>
+    <button onclick="nextStep(3)">다음으로</button>
+</div>
+
+<div id="step3" class="step">
+    <b>[3단계] 회의 내용 기입 (전도/교육/헌금)</b><br><br>
+    <label>전도 현황 및 피드백</label>
+    <textarea id="evangelismNotes" rows="3" placeholder="올해 전도 현황 및 피드백 (추후 연간 누적 데이터 DB 연동)"></textarea>
+    
+    <label>교육 피드백</label>
+    <textarea id="eduNotes" rows="3" placeholder="교육 명단 및 피드백"></textarea>
+    
+    <label>헌금 예정일자 및 피드백</label>
+    <textarea id="offeringNotes" rows="3" placeholder="헌금 예정일자 및 피드백 (추후 월간 고정 데이터 DB 연동)"></textarea>
+    
+    <button onclick="nextStep(2)">이전으로</button>
+    <button onclick="submitData()">회의록 제출하기</button>
+</div>
+
+<script>
+    // 텔레그램 앱 초기화 및 전체화면 확장
+    window.Telegram.WebApp.ready();
+    window.Telegram.WebApp.expand();
+
+    // 화면 전환 함수
+    function nextStep(step) {
+        document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+        document.getElementById('step' + step).classList.add('active');
+    }
+
+    // 최종 데이터 제출 함수
+    function submitData() {
+        // 추후 이 부분에 파이썬 서버로 데이터를 보내는 fetch 코드가 들어갑니다.
+        alert('데이터 전송 테스트 완료 (우분투 파이썬 서버 연결 후 실제 발송됨)');
+        window.Telegram.WebApp.close();
+    }
+</script>
 </body>
 </html>
