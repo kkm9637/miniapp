@@ -21,6 +21,7 @@
         .checkbox-container { display: flex; align-items: center; margin-top: 20px; padding: 15px; background: #e9ecef; border-radius: 5px; }
         .checkbox-container input { width: 20px; height: 20px; margin-right: 10px; }
         .org-section { margin-top: 20px; padding-top: 15px; border-top: 2px dashed #ccc; }
+        #report_preview { white-space: pre-wrap; background: #f8f9fa; padding: 15px; border: 1px solid #dee2e6; border-radius: 5px; font-size: 14px; min-height: 200px; }
     </style>
 </head>
 <body>
@@ -65,7 +66,7 @@
     <button onclick="goToStep(4)">다음으로</button>
 </div>
 
-<!-- 4단계 (추가됨) -->
+<!-- 4단계 -->
 <div id="step4" class="step">
     <h2>4. 기타 회의 내용</h2>
     <label>기타 안건 및 자유 기입</label>
@@ -91,7 +92,8 @@
     window.Telegram.WebApp.ready();
     window.Telegram.WebApp.expand();
 
-    const SERVER_URL = "https://ssl-render-directories-ratios.trycloudflare.com"; // ★ 터널 주소 입력
+    // ★ 여기에 Cloudflare 터널 주소를 입력하세요
+    const SERVER_URL = "https://ssl-render-directories-ratios.trycloudflare.com"; 
 
     let currentMembers = [];
 
@@ -108,10 +110,13 @@
     }
 
     async function nextStep(current, next) {
-        // 1페이지 필수 입력 검증
         if (current === 1 && next === 2) {
             const z = document.getElementById('zone').value;
-            if (!z || !document.getElementById('date').value || !document.getElementById('location').value || !document.getElementById('participants').value) {
+            const d = document.getElementById('date').value;
+            const l = document.getElementById('location').value;
+            const p = document.getElementById('participants').value;
+            
+            if (!z || !d || !l || !p) {
                 alert("구역선택, 일시, 장소, 참여자를 모두 기입해야 다음으로 넘어갈 수 있습니다.");
                 return;
             }
@@ -147,9 +152,9 @@
             evanHtml += `
             <div class="member-row">
                 <div class="member-header">${m.name} (전도 인원: <span id="evan_total_${idx}">${totalEvan}</span>명)</div>
-                <div class="evan-inputs"><label>인:</label><input type="text" id="evan_in_${idx}" value="${m.in_names}"></div>
-                <div class="evan-inputs"><label>교:</label><input type="text" id="evan_kyo_${idx}" value="${m.kyo_names}"></div>
-                <div class="evan-inputs"><label>섬:</label><input type="text" id="evan_sum_${idx}" value="${m.sum_names}"></div>
+                <div class="evan-inputs"><label>인:</label><input type="text" id="evan_in_${idx}" value="${m.in_names}" placeholder="이름 쉼표 구분" oninput="updateEvanCount(${idx})"></div>
+                <div class="evan-inputs"><label>교:</label><input type="text" id="evan_kyo_${idx}" value="${m.kyo_names}" placeholder="이름 쉼표 구분" oninput="updateEvanCount(${idx})"></div>
+                <div class="evan-inputs"><label>섬:</label><input type="text" id="evan_sum_${idx}" value="${m.sum_names}" placeholder="이름 쉼표 구분" oninput="updateEvanCount(${idx})"></div>
                 <input type="text" id="evan_fb_${idx}" placeholder="특이사항/피드백 기입">
             </div>`;
         });
@@ -166,15 +171,16 @@
         const formData = new FormData();
         const zone = document.getElementById('zone').value;
         formData.append('zone', zone);
+        formData.append('date', document.getElementById('date').value);
         
-        // 텔레그램 앱 내에서 실행한 개인 또는 그룹의 고유 채팅 ID 확보
         const chatId = window.Telegram.WebApp.initDataUnsafe?.chat?.id || window.Telegram.WebApp.initDataUnsafe?.user?.id || "";
+        const userId = window.Telegram.WebApp.initDataUnsafe?.user?.id || "";
         formData.append('chat_id', chatId);
+        formData.append('user_id', userId);
         
         const photoFile = document.getElementById('meeting_photo').files[0];
         if (photoFile) formData.append('photo', photoFile);
 
-        // 보고서 텍스트 생성
         let report = `📋 [${zone}구역 주간 회의 보고]\n`;
         report += `📅 일시: ${document.getElementById('date').value}\n📍 장소: ${document.getElementById('location').value}\n👥 참여자: ${document.getElementById('participants').value}\n\n`;
         
@@ -209,20 +215,16 @@
             const response = await fetch(`${SERVER_URL}/api/submit`, { method: 'POST', body: formData });
             if (response.ok) {
                 alert('구역 회의록이 정상적으로 보고 되었습니다.');
-                
-                // 제출 성공 시 모든 입력값 초기화
                 document.querySelectorAll('input, textarea, select').forEach(el => {
                     if (el.type === 'checkbox') el.checked = false;
                     else el.value = '';
                 });
-                
-                // 첫 페이지로 이동
                 goToStep(1);
-                
-                // 최상단으로 스크롤 이동
                 window.scrollTo(0, 0); 
             } else {
-                alert('저장 실패: ' + response.status);
+                // 파이썬 서버에서 보낸 에러 메시지(예: 403 권한없음)를 팝업으로 띄움
+                const errData = await response.json();
+                alert('보고 차단: ' + (errData.message || response.status));
             }
         } catch (error) {
             alert('데이터 전송 오류: ' + error.message);
