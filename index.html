@@ -84,73 +84,95 @@
     <button onclick="submitData()">회의록 완성 (봇으로 전송)</button>
 </div>
 
-<script>
-    window.Telegram.WebApp.ready();
-    window.Telegram.WebApp.expand();
+window.Telegram.WebApp.ready();
+window.Telegram.WebApp.expand();
 
-    // 임시 DB 데이터 (추후 파이썬 서버 연동 시 대체)
-    const mockDB = {
-        "1": [{name: "홍길동", evanCount: 2, offeringDate: "2026-09-25"}, {name: "김철수", evanCount: 0, offeringDate: ""}],
-        "2": [{name: "이영희", evanCount: 1, offeringDate: "2026-10-01"}, {name: "박민수", evanCount: 5, offeringDate: ""}]
-    };
+let currentMembers = [];
 
-    function goToStep(step) {
-        document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
-        document.getElementById('step' + step).classList.add('active');
+async function goToStep(step) {
+    document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+    document.getElementById('step' + step).classList.add('active');
 
-        // 1단계에서 2단계로 넘어갈 때 선택된 구역 명단을 화면에 그림
-        if(step === 2) {
+    if(step === 2) {
+        const zone = document.getElementById('zone').value;
+        try {
+            // 보유하신 도메인 주소로 API 요청 (추후 Nginx 라우팅 필요)
+            const response = await fetch(`https://govdbig.com/api/get-data/${zone}`);
+            currentMembers = await response.json();
             renderLists();
+        } catch (error) {
+            alert('서버에서 명단을 불러오지 못했습니다.');
         }
     }
+}
 
-    function renderLists() {
-        const zone = document.getElementById('zone').value;
-        const members = mockDB[zone] || [];
+// 전도 횟수 +1 증가 함수
+function addEvanCount(index) {
+    const input = document.getElementById(`evan_count_${index}`);
+    input.value = parseInt(input.value || 0) + 1;
+    document.getElementById(`evan_display_${index}`).innerText = input.value;
+}
+
+function renderLists() {
+    let visitHtml = '', worshipHtml = '', evanHtml = '', eduHtml = '', offeringHtml = '';
+
+    currentMembers.forEach((m, idx) => {
+        visitHtml += `<div class="member-row"><div class="member-header">${m.name}</div><input type="text" id="visit_${idx}" placeholder="특이사항 기입"></div>`;
+        worshipHtml += `<div class="member-row"><div class="member-header"><input type="checkbox" id="chk_worship_${idx}"> ${m.name}</div><input type="text" id="worship_${idx}" placeholder="피드백 내용 기입"></div>`;
         
-        let visitHtml = '', worshipHtml = '', evanHtml = '', eduHtml = '', offeringHtml = '';
+        // 전도: 올해 현황을 불러오고 [+1] 버튼으로 추가 가능
+        evanHtml += `<div class="member-row">
+            <div class="member-header">${m.name} (올해 누적: <span id="evan_display_${idx}">${m.evanCount}</span>명) 
+            <button type="button" style="width:auto; padding:5px; margin-left:10px;" onclick="addEvanCount(${idx})">+1 추가</button></div>
+            <input type="hidden" id="evan_count_${idx}" value="${m.evanCount}">
+            <input type="text" id="evan_${idx}" placeholder="특이사항 및 피드백 기입">
+        </div>`;
+        
+        eduHtml += `<div class="member-row"><div class="member-header">${m.name}</div><input type="text" id="edu_${idx}" placeholder="교육 피드백 기입"></div>`;
+        
+        // 헌금: 기존 DB에 저장된 예정일자가 있으면 value에 자동 삽입됨
+        offeringHtml += `<div class="member-row"><div class="member-header">${m.name}</div>
+            <label style="font-size:12px;">헌금 예정일</label>
+            <input type="date" id="offering_date_${idx}" value="${m.offeringDate}">
+            <input type="text" id="offering_fb_${idx}" placeholder="피드백 기입">
+        </div>`;
+    });
 
-        members.forEach((m, idx) => {
-            // 심방: 전원 리스트업, 특이사항 기입
-            visitHtml += `<div class="member-row">
-                <div class="member-header">${m.name}</div>
-                <input type="text" id="visit_${idx}" placeholder="${m.name} 특이사항 기입">
-            </div>`;
+    document.getElementById('visit-list').innerHTML = visitHtml;
+    document.getElementById('worship-list').innerHTML = worshipHtml;
+    document.getElementById('evangelism-list').innerHTML = evanHtml;
+    document.getElementById('edu-list').innerHTML = eduHtml;
+    document.getElementById('offering-list').innerHTML = offeringHtml;
+}
 
-            // 예배: 체크박스로 선택 및 피드백
-            worshipHtml += `<div class="member-row">
-                <div class="member-header"><input type="checkbox" id="chk_worship_${idx}"> ${m.name}</div>
-                <input type="text" id="worship_${idx}" placeholder="피드백 내용 기입">
-            </div>`;
+async function submitData() {
+    const zone = document.getElementById('zone').value;
+    const date = document.getElementById('date').value;
+    
+    const membersData = currentMembers.map((m, idx) => ({
+        name: m.name,
+        evanCount: parseInt(document.getElementById(`evan_count_${idx}`).value),
+        offeringDate: document.getElementById(`offering_date_${idx}`).value
+    }));
 
-            // 전도: 전도 현황 표시 및 피드백
-            evanHtml += `<div class="member-row">
-                <div class="member-header">${m.name} <span class="badge">올해 전도: ${m.evanCount}명</span></div>
-                <input type="text" id="evan_${idx}" placeholder="특이사항 및 피드백 기입">
-            </div>`;
+    const payload = { zone, date, members_data: membersData };
 
-            // 교육: 피드백 기입
-            eduHtml += `<div class="member-row">
-                <div class="member-header">${m.name}</div>
-                <input type="text" id="edu_${idx}" placeholder="교육 피드백 기입">
-            </div>`;
-
-            // 헌금: 예정일자 및 피드백 (기존 예정일자가 있으면 밸류에 삽입)
-            offeringHtml += `<div class="member-row">
-                <div class="member-header">${m.name}</div>
-                <label style="font-size:12px;">헌금 예정일</label>
-                <input type="date" id="offering_date_${idx}" value="${m.offeringDate}">
-                <input type="text" id="offering_fb_${idx}" placeholder="피드백 기입">
-            </div>`;
+    try {
+        const response = await fetch('https://govdbig.com/api/submit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
         });
 
-        document.getElementById('visit-list').innerHTML = visitHtml;
-        document.getElementById('worship-list').innerHTML = worshipHtml;
-        document.getElementById('evangelism-list').innerHTML = evanHtml;
-        document.getElementById('edu-list').innerHTML = eduHtml;
-        document.getElementById('offering-list').innerHTML = offeringHtml;
+        if(response.ok) {
+            alert('회의록이 저장되었습니다.');
+            window.Telegram.WebApp.close();
+        }
+    } catch (error) {
+        alert('데이터 전송 중 오류가 발생했습니다.');
     }
-
+}
+    
     function submitData() {
         alert('작성 완료! 텔레그램으로 전송합니다. (서버 연결 시 작동)');
         window.Telegram.WebApp.close();
