@@ -3,180 +3,250 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>회의록 작성</title>
+    <title>구역 회의록 작성</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: sans-serif; padding: 15px; background-color: var(--tg-theme-bg-color, #fff); color: var(--tg-theme-text-color, #000); }
-        .step { display: none; }
+        body { font-family: 'Malgun Gothic', sans-serif; padding: 20px; background-color: #f4f6f9; }
+        .step { display: none; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .active { display: block; }
-        input[type="text"], input[type="date"], select, textarea { width: 100%; margin-bottom: 15px; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; }
-        button { width: 100%; padding: 12px; background-color: var(--tg-theme-button-color, #3390ec); color: var(--tg-theme-button-text-color, #fff); border: none; border-radius: 5px; margin-bottom: 8px; font-weight: bold; cursor: pointer; }
-        
-        .section-title { font-size: 16px; font-weight: bold; margin-top: 20px; margin-bottom: 10px; color: var(--tg-theme-button-color, #3390ec); border-bottom: 1px solid #eee; padding-bottom: 5px; }
-        .member-row { display: flex; flex-direction: column; margin-bottom: 15px; padding: 10px; background: #f9f9f9; border-radius: 5px; border: 1px solid #eee; color: #333; }
-        .member-header { display: flex; align-items: center; font-weight: bold; margin-bottom: 5px; }
-        .member-header input[type="checkbox"] { width: auto; margin-right: 10px; transform: scale(1.2); }
-        .member-row input, .member-row textarea { margin-bottom: 0; margin-top: 5px; }
-        .badge { font-size: 12px; background: #e0e0e0; padding: 2px 6px; border-radius: 10px; margin-left: auto; }
+        h2 { border-bottom: 2px solid #0088cc; padding-bottom: 10px; color: #333; }
+        label { font-weight: bold; margin-top: 10px; display: block; }
+        input[type="text"], input[type="date"], select, textarea { width: 100%; padding: 10px; margin-top: 5px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        .member-row { background: #f9f9f9; padding: 10px; margin-bottom: 10px; border-left: 4px solid #0088cc; border-radius: 4px; }
+        .member-header { font-weight: bold; margin-bottom: 5px; font-size: 1.1em; }
+        .evan-inputs { display: flex; align-items: center; gap: 10px; margin-bottom: 5px; }
+        .evan-inputs label { margin: 0; width: 30px; }
+        button { width: 100%; padding: 12px; margin-top: 10px; border: none; background: #0088cc; color: white; border-radius: 5px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        button.secondary { background: #6c757d; }
+        .checkbox-container { display: flex; align-items: center; margin-top: 20px; padding: 15px; background: #e9ecef; border-radius: 5px; }
+        .checkbox-container input { width: 20px; height: 20px; margin-right: 10px; }
+        #report_preview { white-space: pre-wrap; background: #f8f9fa; padding: 15px; border: 1px solid #dee2e6; border-radius: 5px; font-size: 14px; min-height: 200px; }
     </style>
 </head>
 <body>
 
-<!-- [1단계] -->
+<!-- 1단계: 기본 정보 -->
 <div id="step1" class="step active">
-<label>구역 선택</label>
-<select id="zone">
-    <option value="1">1구역</option>
-    <option value="2">2구역</option>
-    <option value="3">3구역</option>
-    <option value="4">4구역</option>
-    <option value="5">5구역</option>
-    <option value="6">6구역</option>
-    <option value="7">7구역</option>
-    <option value="8">8구역</option>
-    <option value="9">9구역</option>
-    <option value="10">10구역</option>
-</select>
-    
+    <h2>1. 회의 기본 정보</h2>
+    <label>구역 선택</label>
+    <select id="zone">
+        <option value="">선택하세요</option>
+        <option value="1">1구역</option>
+        <option value="2">2구역</option>
+        <option value="3">3구역</option>
+        <option value="4">4구역</option>
+        <option value="5">5구역</option>
+        <option value="6">6구역</option>
+        <option value="7">7구역</option>
+        <option value="8">8구역</option>
+        <option value="9">9구역</option>
+        <option value="10">10구역</option>
+    </select>
     <label>일시</label>
     <input type="date" id="date">
-    
     <label>장소</label>
-    <input type="text" id="location" placeholder="직접 기입">
-    
-    <label>참여자(이름)</label>
-    <input type="text" id="participants" placeholder="직접 기입 (예: 홍길동, 김철수)">
-    
-    <button onclick="goToStep(2)">다음으로 (명단 불러오기)</button>
+    <input type="text" id="location" placeholder="예: 교회, 카페 이름 등">
+    <label>참여자 (이름)</label>
+    <input type="text" id="participants" placeholder="예: 홍길동, 김철수">
+    <button onclick="goToStep(2)">다음으로</button>
 </div>
 
-<!-- [2단계] -->
+<!-- 2단계: 예배/심방 -->
 <div id="step2" class="step">
-    <h2>회의 내용 (심방/예배)</h2>
-    
-    <div class="section-title">- 심방(신앙관리)</div>
-    <div id="visit-list"></div> <!-- 명단 동적 생성 영역 -->
-
-    <div class="section-title">- 예배</div>
-    <b>[개인]</b> 특이사항 인원 선택
-    <div id="worship-list"></div> <!-- 명단 동적 생성 영역 -->
-    
-    <br><b>[조직]</b> 구역 예배 피드백
-    <textarea id="worship-org" rows="3" placeholder="구역 자체 예배 피드백 내용"></textarea>
-    
-    <button onclick="goToStep(1)">이전으로</button>
+    <h2>2. 회의 내용 (심방/예배)</h2>
+    <div id="worship-list"></div>
+    <button class="secondary" onclick="goToStep(1)">이전으로</button>
     <button onclick="goToStep(3)">다음으로</button>
 </div>
 
-<!-- [3단계] -->
+<!-- 3단계: 전도 현황 -->
 <div id="step3" class="step">
-    <h2>회의 내용 (전도/교육/헌금)</h2>
-    
-    <div class="section-title">- 전도</div>
-    <b>[개인]</b> 올해 현황 및 피드백
+    <h2>3. 회의 내용 (전도 현황)</h2>
+    <p style="font-size:12px; color:#666;">※ 전도한 인원의 이름을 기입하면 누적 인원이 자동 계산되며, 다음번에도 기억됩니다.</p>
     <div id="evangelism-list"></div>
-    
-    <br><b>[조직]</b> 구역 전도 피드백
-    <textarea id="evangelism-org" rows="3" placeholder="구역 자체 전도 피드백 내용"></textarea>
+    <button class="secondary" onclick="goToStep(2)">이전으로</button>
+    <button onclick="goToStep(4)">다음으로</button>
+</div>
 
-    <div class="section-title">- 교육</div>
-    <b>[개인]</b> 교육 피드백
-    <div id="edu-list"></div>
-
-    <div class="section-title">- 헌금</div>
-    <b>[개인]</b> 예정일자 및 피드백
-    <div id="offering-list"></div>
+<!-- 4단계: 증빙 및 완료 확인 -->
+<div id="step4" class="step">
+    <h2>4. 후보고 사진 및 확인</h2>
+    <label>회의/모임 사진 첨부</label>
+    <input type="file" id="meeting_photo" accept="image/*">
     
-    <button onclick="goToStep(2)">이전으로</button>
-    <button onclick="submitData()">회의록 완성 (봇으로 전송)</button>
+    <div class="checkbox-container">
+        <input type="checkbox" id="confirm_meeting">
+        <label for="confirm_meeting">구역의 구역장과 부구역장이 모여 회의를 했음을 확인합니다.</label>
+    </div>
+    
+    <button class="secondary" onclick="goToStep(3)">이전으로</button>
+    <button onclick="goToStep(5)">결과 요약 보기</button>
+</div>
+
+<!-- 5단계: 후보고 최종 검토 및 전송 -->
+<div id="step5" class="step">
+    <h2>5. 후보고 최종 검토</h2>
+    <div id="report_preview"></div>
+    <button class="secondary" onclick="goToStep(4)">수정하기</button>
+    <button onclick="submitData()" style="background: #28a745;">보고서 최종 제출</button>
 </div>
 
 <script>
     window.Telegram.WebApp.ready();
     window.Telegram.WebApp.expand();
 
-    // 우분투 라이트세일 서버의 고정 IP를 입력하세요 (예: http://3.34.12.34)
-    const SERVER_URL = "https://ssl-render-directories-ratios.trycloudflare.com";
+    const SERVER_URL = "https://ssl-render-directories-ratios.trycloudflare.com"; // ★ 여기에 터널 주소를 넣어주세요.
 
     let currentMembers = [];
 
-    async function goToStep(step) {
-        document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
-        document.getElementById('step' + step).classList.add('active');
+    // 입력된 콤마(,)나 띄어쓰기로 분리해 인원수를 세는 함수
+    function countNames(str) {
+        if (!str) return 0;
+        return str.split(/[ ,]+/).filter(n => n.trim() !== "").length;
+    }
 
+    // 전도 인원수 실시간 업데이트
+    function updateEvanCount(idx) {
+        const inStr = document.getElementById(`evan_in_${idx}`).value;
+        const kyoStr = document.getElementById(`evan_kyo_${idx}`).value;
+        const sumStr = document.getElementById(`evan_sum_${idx}`).value;
+        const total = countNames(inStr) + countNames(kyoStr) + countNames(sumStr);
+        document.getElementById(`evan_total_${idx}`).innerText = total;
+    }
+
+    async function goToStep(step) {
+        // 1 -> 2 넘어갈 때 필수 입력값 검증
         if (step === 2) {
-            const zone = document.getElementById('zone').value;
+            const z = document.getElementById('zone').value;
+            const d = document.getElementById('date').value;
+            const l = document.getElementById('location').value;
+            const p = document.getElementById('participants').value;
+            if (!z || !d || !l || !p) {
+                alert("구역, 일시, 장소, 참여자를 모두 기입해야 다음으로 넘어갈 수 있습니다.");
+                return;
+            }
+            // 서버에서 명단 및 누적 전도 정보 불러오기
             try {
-                // 라이트세일 우분투 서버 IP로 직접 명단 요청
-                const response = await fetch(`${SERVER_URL}/api/get-data/${zone}`);
-                if (!response.ok) {
-                    throw new Error(`HTTP 상태 코드: ${response.status}`);
-                }
+                const response = await fetch(`${SERVER_URL}/api/get-data/${z}`);
+                if (!response.ok) throw new Error("서버 에러");
                 currentMembers = await response.json();
                 renderLists();
             } catch (error) {
                 alert('명단 로딩 실패: ' + error.message);
+                return;
             }
         }
-    }
+        
+        // 4 -> 5 넘어갈 때 체크박스 확인 및 보고서 생성
+        if (step === 5) {
+            if (!document.getElementById('confirm_meeting').checked) {
+                alert("구역장/부구역장 회의 확인란에 체크해야 완료할 수 있습니다.");
+                return;
+            }
+            generateReport();
+        }
 
-    function addEvanCount(index) {
-        const input = document.getElementById(`evan_count_${index}`);
-        input.value = parseInt(input.value || 0) + 1;
-        document.getElementById(`evan_display_${index}`).innerText = input.value;
+        document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+        document.getElementById('step' + step).classList.add('active');
     }
 
     function renderLists() {
-        let visitHtml = '', worshipHtml = '', evanHtml = '', eduHtml = '', offeringHtml = '';
+        let worshipHtml = '', evanHtml = '';
 
         currentMembers.forEach((m, idx) => {
-            visitHtml += `<div class="member-row"><div class="member-header">${m.name}</div><input type="text" id="visit_${idx}" placeholder="특이사항 기입"></div>`;
-            worshipHtml += `<div class="member-row"><div class="member-header"><input type="checkbox" id="chk_worship_${idx}"> ${m.name}</div><input type="text" id="worship_${idx}" placeholder="피드백 내용 기입"></div>`;
-            
-            evanHtml += `<div class="member-row">
-                <div class="member-header">${m.name} (올해 누적: <span id="evan_display_${idx}">${m.evanCount}</span>명) 
-                <button type="button" style="width:auto; padding:5px; margin-left:10px;" onclick="addEvanCount(${idx})">+1 추가</button></div>
-                <input type="hidden" id="evan_count_${idx}" value="${m.evanCount}">
-                <input type="text" id="evan_${idx}" placeholder="특이사항 및 피드백 기입">
+            // 심방/예배 피드백 (체크박스 제거됨)
+            worshipHtml += `
+            <div class="member-row">
+                <div class="member-header">${m.name}</div>
+                <input type="text" id="visit_${idx}" placeholder="심방(신앙관리) 피드백 기입">
+                <input type="text" id="worship_${idx}" placeholder="예배 피드백 기입">
             </div>`;
             
-            eduHtml += `<div class="member-row"><div class="member-header">${m.name}</div><input type="text" id="edu_${idx}" placeholder="교육 피드백 기입"></div>`;
-            
-            offeringHtml += `<div class="member-row"><div class="member-header">${m.name}</div>
-                <label style="font-size:12px;">헌금 예정일</label>
-                <input type="date" id="offering_date_${idx}" value="${m.offeringDate}">
-                <input type="text" id="offering_fb_${idx}" placeholder="피드백 기입">
+            // 전도 현황 (인, 교, 섬 이름 입력)
+            const totalEvan = countNames(m.in_names) + countNames(m.kyo_names) + countNames(m.sum_names);
+            evanHtml += `
+            <div class="member-row">
+                <div class="member-header">${m.name} (전도 인원: <span id="evan_total_${idx}">${totalEvan}</span>명)</div>
+                <div class="evan-inputs"><label>인:</label><input type="text" id="evan_in_${idx}" value="${m.in_names}" placeholder="이름 쉼표 구분" oninput="updateEvanCount(${idx})"></div>
+                <div class="evan-inputs"><label>교:</label><input type="text" id="evan_kyo_${idx}" value="${m.kyo_names}" placeholder="이름 쉼표 구분" oninput="updateEvanCount(${idx})"></div>
+                <div class="evan-inputs"><label>섬:</label><input type="text" id="evan_sum_${idx}" value="${m.sum_names}" placeholder="이름 쉼표 구분" oninput="updateEvanCount(${idx})"></div>
+                <input type="text" id="evan_fb_${idx}" placeholder="특이사항/피드백 기입">
             </div>`;
         });
 
-        document.getElementById('visit-list').innerHTML = visitHtml;
         document.getElementById('worship-list').innerHTML = worshipHtml;
         document.getElementById('evangelism-list').innerHTML = evanHtml;
-        document.getElementById('edu-list').innerHTML = eduHtml;
-        document.getElementById('offering-list').innerHTML = offeringHtml;
+    }
+
+    function generateReport() {
+        const zone = document.getElementById('zone').value;
+        const date = document.getElementById('date').value;
+        const loc = document.getElementById('location').value;
+        const participants = document.getElementById('participants').value;
+
+        let report = `📋 [${zone}구역 주간 회의 보고]\n`;
+        report += `📅 일시: ${date}\n📍 장소: ${loc}\n👥 참여자: ${participants}\n\n`;
+        
+        report += `[심방 및 예배 피드백]\n`;
+        currentMembers.forEach((m, idx) => {
+            const visit = document.getElementById(`visit_${idx}`).value;
+            const worship = document.getElementById(`worship_${idx}`).value;
+            if (visit || worship) {
+                report += `▫️ ${m.name}\n`;
+                if (visit) report += ` - 심방: ${visit}\n`;
+                if (worship) report += ` - 예배: ${worship}\n`;
+            }
+        });
+
+        report += `\n[전도 현황 피드백]\n`;
+        currentMembers.forEach((m, idx) => {
+            const e_in = document.getElementById(`evan_in_${idx}`).value;
+            const e_kyo = document.getElementById(`evan_kyo_${idx}`).value;
+            const e_sum = document.getElementById(`evan_sum_${idx}`).value;
+            const e_fb = document.getElementById(`evan_fb_${idx}`).value;
+            const total = document.getElementById(`evan_total_${idx}`).innerText;
+            
+            if (e_in || e_kyo || e_sum || e_fb) {
+                report += `▫️ ${m.name} (누적 ${total}명)\n`;
+                if (e_in) report += ` - 인: ${e_in}\n`;
+                if (e_kyo) report += ` - 교: ${e_kyo}\n`;
+                if (e_sum) report += ` - 섬: ${e_sum}\n`;
+                if (e_fb) report += ` - 피드백: ${e_fb}\n`;
+            }
+        });
+
+        document.getElementById('report_preview').innerText = report;
     }
 
     async function submitData() {
-        const zone = document.getElementById('zone').value;
-        const date = document.getElementById('date').value;
+        // FormData를 사용해 이미지와 텍스트를 함께 전송
+        const formData = new FormData();
+        formData.append('zone', document.getElementById('zone').value);
+        formData.append('report_text', document.getElementById('report_preview').innerText);
+        // 텔레그램 채팅방으로 결과 전송을 위한 User ID 확보
+        formData.append('chat_id', window.Telegram.WebApp.initDataUnsafe?.user?.id || ""); 
         
+        const photoFile = document.getElementById('meeting_photo').files[0];
+        if (photoFile) {
+            formData.append('photo', photoFile);
+        }
+
         const membersData = currentMembers.map((m, idx) => ({
             name: m.name,
-            evanCount: parseInt(document.getElementById(`evan_count_${idx}`).value),
-            offeringDate: document.getElementById(`offering_date_${idx}`).value
+            in: document.getElementById(`evan_in_${idx}`).value,
+            kyo: document.getElementById(`evan_kyo_${idx}`).value,
+            sum: document.getElementById(`evan_sum_${idx}`).value
         }));
-
-        const payload = { zone, date, members_data: membersData };
+        formData.append('members_data', JSON.stringify(membersData));
 
         try {
             const response = await fetch(`${SERVER_URL}/api/submit`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: formData
             });
 
             if (response.ok) {
-                alert('회의록이 저장되었습니다.');
+                alert('보고서 전송이 완료되었습니다!');
                 window.Telegram.WebApp.close();
             } else {
                 alert('저장 실패: ' + response.status);
